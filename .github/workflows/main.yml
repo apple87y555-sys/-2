@@ -19,21 +19,22 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Unzip project if needed
+    - name: Unzip project if exists
       run: |
-        if [ -f *.zip ]; then
+        if ls *.zip >/dev/null 2>&1; then
           unzip -o *.zip
         fi
 
-    - name: Make gradlew executable
+    - name: Setup Gradle Wrapper and Build
       run: |
-        find . -name "gradlew" -exec chmod +x {} +
-
-    - name: Build with Gradle
-      run: |
-        GRADLE_DIR=$(find . -name "gradlew" -exec dirname {} + | head -n 1)
-        cd "$GRADLE_DIR"
-        ./gradlew assembleDebug --stacktrace
+        # البحث عن المجلد الذي يحتوي على build.gradle أو app
+        BUILD_DIR=$(find . -name "build.gradle*" -exec dirname {} + | head -n 1)
+        cd "$BUILD_DIR"
+        
+        # تثبيت gradle وتوليد ملف gradlew تلقائياً إذا كان مفقوداً
+        gradle wrapper
+        chmod +x gradlew
+        ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
