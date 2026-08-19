@@ -25,16 +25,21 @@ jobs:
           unzip -o *.zip
         fi
 
-    - name: Setup Gradle Wrapper and Build
+    - name: Build with Gradle
       run: |
-        # البحث عن المجلد الذي يحتوي على build.gradle أو app
-        BUILD_DIR=$(find . -name "build.gradle*" -exec dirname {} + | head -n 1)
-        cd "$BUILD_DIR"
-        
-        # تثبيت gradle وتوليد ملف gradlew تلقائياً إذا كان مفقوداً
-        gradle wrapper
-        chmod +x gradlew
-        ./gradlew assembleDebug
+        # البحث عن ملف gradlew وتجهيزه
+        GRADLEW_PATH=$(find . -name gradlew | head -n 1)
+        if [ -n "$GRADLEW_PATH" ]; then
+          DIR=$(dirname "$GRADLEW_PATH")
+          cd "$DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+        else
+          # في حال عدم وجود gradlew سنعتمد على gradle النظام
+          BUILD_DIR=$(find . -name "build.gradle*" -exec dirname {} + | head -n 1)
+          cd "$BUILD_DIR"
+          gradle assembleDebug --no-daemon
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
