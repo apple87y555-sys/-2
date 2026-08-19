@@ -13,21 +13,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: List files
-      run: ls -R
-
-    - name: Unzip project
+    - name: Prepare Files
       run: |
+        # فك الضغط إذا كان هناك ملف ZIP، وإلا انقل الملفات لمجلد عمل
         if ls *.zip >/dev/null 2>&1; then
-          unzip '*.zip' -d project_files
-          cd project_files
-          # نتحقق إذا كان هناك مجلد داخل مجلد
-          if [ -d "*/" ]; then
-             cd *
-          fi
+           unzip '*.zip' -d project_source
         else
-          echo "No zip file found"
-          exit 1
+           mkdir project_source
+           mv * project_source/ || true
         fi
 
     - name: Set up JDK 17
@@ -38,12 +31,14 @@ jobs:
 
     - name: Build with Gradle
       run: |
-        cd project_files/* || cd project_files
-        chmod +x gradlew || true
-        ./gradlew assembleDebug
+        # البحث عن ملف التشغيل في أي مكان داخل المجلد وتشغيله
+        GRADLEW_PATH=$(find . -name gradlew | head -n 1)
+        chmod +x "$GRADLEW_PATH"
+        "$GRADLEW_PATH" assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-release
-        path: "**/app/build/outputs/apk/debug/app-debug.apk"
+        # البحث عن أي ملف APK تم إنتاجه في أي مكان
+        path: "**/app/build/outputs/apk/debug/*.apk"
